@@ -22,7 +22,7 @@ public class Booking {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String reference; // Mã đặt vé dễ đọc
+    private String reference;           // Ví dụ: BK-A1B2C3D4
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
@@ -33,10 +33,11 @@ public class Booking {
     private BookingStatus status = BookingStatus.PENDING;
 
     @Column(nullable = false)
-    private BigDecimal totalAmount;
+    private BigDecimal totalAmount = BigDecimal.ZERO;
 
     private Instant createdAt = Instant.now();
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<BookingItem> bookingItems = new ArrayList<>();
 }

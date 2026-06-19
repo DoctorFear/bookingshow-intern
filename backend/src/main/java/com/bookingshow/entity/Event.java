@@ -39,5 +39,6 @@ public class Event {
     private String organizer;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<TicketType> ticketTypes = new ArrayList<>();
 }

@@ -3,6 +3,8 @@ package com.bookingshow.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "ticket_types")
@@ -22,7 +24,7 @@ public class TicketType {
     private Event event;
 
     @Column(nullable = false)
-    private String name; // Standard, VIP, ...
+    private String name;
 
     @Column(nullable = false)
     private BigDecimal price;
@@ -32,4 +34,9 @@ public class TicketType {
 
     @Column(nullable = false)
     private Integer soldQuantity = 0;
+
+    // ==================== THÊM PHẦN NÀY ====================
+    @OneToMany(mappedBy = "ticketType", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<BookingItem> bookingItems = new ArrayList<>();
 }

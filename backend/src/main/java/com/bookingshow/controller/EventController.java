@@ -4,9 +4,15 @@ import com.bookingshow.dto.EventRequest;
 import com.bookingshow.dto.EventResponse;
 import com.bookingshow.dto.TicketTypeRequest;
 import com.bookingshow.dto.TicketTypeResponse;
+import com.bookingshow.enums.Category;
 import com.bookingshow.service.EventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.time.Instant;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -75,5 +81,23 @@ public class EventController {
             @PathVariable Long ticketTypeId) {
         eventService.deleteTicketType(eventId, ticketTypeId);
         return ResponseEntity.noContent().build();
+    }
+
+
+    // Search & Filter
+    @GetMapping("/search")
+    public ResponseEntity<Page<EventResponse>> searchEvents(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Category category,
+            @RequestParam(required = false) Instant startDate,
+            @RequestParam(required = false) Instant endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "startTime") String sortBy) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
+
+        Page<EventResponse> result = eventService.searchEvents(keyword, category, startDate, endDate, pageable);
+        return ResponseEntity.ok(result);
     }
 }

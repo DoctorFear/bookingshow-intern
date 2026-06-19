@@ -20,11 +20,27 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     List<Event> findByStartTimeBetween(Instant start, Instant end);
 
+    Page<Event> findAll(Pageable pageable);
+
+    // Tìm kiếm nâng cao + Pagination
+    @Query("SELECT DISTINCT e FROM Event e LEFT JOIN FETCH e.ticketTypes WHERE " +
+            "(:keyword IS NULL OR LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:category IS NULL OR e.category = :category) " +
+            "AND (:startDate IS NULL OR e.startTime >= :startDate) " +
+            "AND (:endDate IS NULL OR e.startTime <= :endDate)")
+    Page<Event> searchEvents(
+            @Param("keyword") String keyword,
+            @Param("category") Category category,
+            @Param("startDate") Instant startDate,
+            @Param("endDate") Instant endDate,
+            Pageable pageable);
+
+
     @Query("SELECT e FROM Event e WHERE LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<Event> searchByKeyword(String keyword);
 
-    Page<Event> findAll(Pageable pageable);
 
     // ==================== FETCH JOIN ====================
     @Query("SELECT e FROM Event e LEFT JOIN FETCH e.ticketTypes WHERE e.id = :id")
@@ -32,4 +48,5 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     @Query("SELECT e FROM Event e LEFT JOIN FETCH e.ticketTypes")
     List<Event> findAllWithTicketTypes();
+
 }

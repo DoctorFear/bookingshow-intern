@@ -6,12 +6,16 @@ import com.bookingshow.dto.TicketTypeRequest;
 import com.bookingshow.dto.TicketTypeResponse;
 import com.bookingshow.entity.Event;
 import com.bookingshow.entity.TicketType;
+import com.bookingshow.enums.Category;
 import com.bookingshow.repository.EventRepository;
 import com.bookingshow.repository.TicketTypeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -168,5 +172,22 @@ public class EventService {
                 .soldQuantity(tt.getSoldQuantity())
                 .remainingQuantity(tt.getTotalQuantity() - tt.getSoldQuantity())
                 .build();
+    }
+
+
+    // Search & Filter với Pagination
+    public Page<EventResponse> searchEvents(String keyword, Category category,
+                                            Instant startDate, Instant endDate, Pageable pageable) {
+
+        Page<Event> eventsPage = eventRepository.searchEvents(keyword, category, startDate, endDate, pageable);
+
+        return eventsPage.map(this::convertToEventResponse);
+    }
+
+    // Method hỗ trợ cũ (nếu cần)
+    public List<EventResponse> searchByKeyword(String keyword) {
+        return eventRepository.searchByKeyword(keyword).stream()
+                .map(this::convertToEventResponse)
+                .toList();
     }
 }

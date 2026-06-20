@@ -1,6 +1,7 @@
 package com.bookingshow.service.ai;
 
 import com.bookingshow.dto.AiSearchRequest;
+import com.bookingshow.dto.EventAnswerResponse;
 import com.bookingshow.dto.EventResponse;
 import com.bookingshow.service.EventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -126,5 +127,92 @@ public class AiService {
     private List<EventResponse> getFallbackResults() {
         log.warn("⚠️ Fallback: Trả về tất cả events");
         return eventService.getAllEvents().stream().limit(20).toList();
+    }
+
+    /**
+     * <></>rả lời câu hỏi về một event cụ thể (Grounded Q&A)
+     */
+    public EventAnswerResponse answerEventQuestion(Long eventId, String question) {
+        try {
+            // Lấy thông tin event
+            EventResponse event = eventService.getEventById(eventId);
+
+            String prompt = buildQAPrompt(event, question);
+
+            String groqResponse = callGroqForQA(prompt);
+
+            log.info("💡 AI Answer for Event {}: {}", eventId, groqResponse.substring(0, Math.min(150, groqResponse.length())) + "...");
+
+            return EventAnswerResponse.builder()
+                    .question(question)
+                    .answer(groqResponse)
+                    .eventId(eventId)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("❌ AI Q&A failed for event {}", eventId, e);
+            return EventAnswerResponse.builder()
+                    .question(question)
+                    .answer("Xin lỗi, hiện tại tôi chưa thể trả lời câu hỏi này. Vui lòng thử lại sau.")
+                    .eventId(eventId)
+                    .build();
+        }
+    }
+
+    private String buildQAPrompt(EventResponse event, String question) {
+        return """
+        Bạn là trợ lý tư vấn sự kiện chuyên nghiệp.
+        Hãy trả lời câu hỏi của khách hàng dựa trên thông tin sự kiện dưới đây.
+        Trả lời ngắn gọn, lịch sự, bằng tiếng Việt.
+        Nếu câu hỏi không liên quan đến sự kiện, hãy trả lời lịch sự rằng bạn chỉ trả lời về sự kiện này.
+
+        Thông tin sự kiện:
+        Tiêu đề: %s
+        Mô tả: %s
+        Thể loại: %s
+        Địa điểm: %s
+        Thời gian: %s
+        Nhà tổ chức: %s
+
+        Câu hỏi của khách hàng: %s
+
+        Trả lời:
+        """.formatted(
+                event.getTitle(),
+                event.getDescription(),
+                event.getCategory(),
+                event.getVenue(),
+                event.getStartTime(),
+                event.getOrganizer(),
+                question
+        );
+    }
+
+    private String callGroqForQA(String prompt) {
+        var requestBody = Map.of(
+                "model", modelName,
+                "messages", List.of(
+                        Map.of("role", "user", "content", prompt)
+                ),
+                "temperature", 0.3,
+                "max_tokens", 600
+        );
+
+        RestClient restClient = RestClient.create();
+
+        Map<String, Object> response = restClient.post()
+                .uri("https://api.groq.com/openai/v1/chat/completions")
+                .header("Authorization", "Bearer " + groqApiKey)
+                .header("Content-Type", "application/json")
+                .body(requestBody)
+                .retrieve()
+                .body(Map.class);
+
+        @SuppressWarnings("unchecked")
+        var choice = (Map<String, Object>) ((List<?>) response.get("choices")).get(0);
+        @SuppressWarnings("unchecked")
+        var message = (Map<String, Object>) choice.get("message");
+
+        return (String) message.get("content");
     }
 }

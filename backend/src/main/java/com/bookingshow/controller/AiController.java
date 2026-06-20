@@ -1,5 +1,7 @@
 package com.bookingshow.controller;
 
+import com.bookingshow.dto.EventAnswerResponse;
+import com.bookingshow.dto.EventQuestionRequest;
 import com.bookingshow.dto.EventResponse;
 import com.bookingshow.service.ai.AiService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,15 @@ public class AiController {
     public ResponseEntity<List<EventResponse>> search(@RequestBody AiSearchQuery query) {
         List<EventResponse> results = aiService.searchByNaturalLanguage(query.getQuery());
         return ResponseEntity.ok(results);
+    }
+
+    @PostMapping("/events/{id}/ask")
+    public ResponseEntity<EventAnswerResponse> askAboutEvent(
+            @PathVariable Long id,
+            @RequestBody EventQuestionRequest request) {
+
+        EventAnswerResponse answer = aiService.answerEventQuestion(id, request.getQuestion());
+        return ResponseEntity.ok(answer);
     }
 }
 
